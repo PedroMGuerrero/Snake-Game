@@ -1,0 +1,151 @@
+const board = document.getElementById('board');
+const scoreBoard = document.getElementById('scoreBoard');
+const startButton = document.getElementById('start');
+const gameOverSign = document.getElementById('gameOver');
+
+// Configuraciones del Juego
+const boardSize = 10;
+const gameSpeed = 100;
+const squareTypes = {
+    emptySquare: 0,
+    snakeSquare: 1,
+    foodSquare: 2
+};
+const directions = {
+    ArrowUp: -10,
+    ArrowDown: 10,
+    ArrowRight: 1,
+    ArrowLeft: -1,
+};
+
+// Variables del Juego
+let snake;
+let score;
+let direction;
+let boardSquares;
+let emptySquares;
+let moveInterval;
+
+
+const DibujarSerpiente = () => {
+    snake.forEach( square => DibujarFigura(square, 'snakeSquare'));
+}
+
+const DibujarFigura = (square, type) => {
+    const [ row, column ] = square.split('');
+    boardSquares[row][column] = squareTypes[type];
+    const squareElement = document.getElementById(square);
+    squareElement.setAttribute('class', `square ${type}`);
+
+    if(type === 'emptySquare') {
+        emptySquares.push(square);
+    } else {
+        if(emptySquares.indexOf(square) !== -1) {
+            emptySquares.splice(emptySquares.indexOf(square), 1);
+        }
+    }
+}
+
+const  MoverSerpiente = () => {
+    const newSquare = String(
+        Number(snake[snake.length - 1]) + directions[direction])
+        .padStart(2, '0');
+    const [row, column] = newSquare.split('');
+
+
+    if( newSquare < 0 || 
+        newSquare > boardSize * boardSize  ||
+        (direction === 'ArrowRight' && column == 0) ||
+        (direction === 'ArrowLeft' && column == 9 ||
+        boardSquares[row][column] === squareTypes.snakeSquare) ) {
+        FinJuego();
+    } else {
+        snake.push(newSquare);
+        if(boardSquares[row][column] === squareTypes.foodSquare) {
+            NuevaComida();
+        } else {
+            const emptySquare = snake.shift();
+            DibujarFigura(emptySquare, 'emptySquare');
+        }
+        DibujarSerpiente();
+    }
+}
+
+const NuevaComida = () => {
+    score++;
+    ActualizarPuntos();
+    ComidaAzar();
+}
+
+const FinJuego = () => {
+    gameOverSign.style.display = 'block';
+    clearInterval(moveInterval)
+    startButton.disabled = false;
+}
+
+const setDirection = newDirection => {
+    direction = newDirection;
+}
+
+const Movimientos = key => {
+    switch (key.code) {
+        case 'ArrowUp':
+            direction != 'ArrowDown' && setDirection(key.code)
+            break;
+        case 'ArrowDown':
+            direction != 'ArrowUp' && setDirection(key.code)
+            break;
+        case 'ArrowLeft':
+            direction != 'ArrowRight' && setDirection(key.code)
+            break;
+        case 'ArrowRight':
+            direction != 'ArrowLeft' && setDirection(key.code)
+            break;
+    }
+}
+
+const ComidaAzar = () => {
+    const randomEmptySquare = emptySquares[Math.floor(Math.random() * emptySquares.length)];
+    DibujarFigura(randomEmptySquare, 'foodSquare');
+}
+
+const ActualizarPuntos = () => {
+    scoreBoard.innerText = score;
+}
+
+const CrearTablero = () => {
+    boardSquares.forEach( (row, rowIndex) => {
+        row.forEach( (column, columnndex) => {
+            const squareValue = `${rowIndex}${columnndex}`;
+            const squareElement = document.createElement('div');
+            squareElement.setAttribute('class', 'square emptySquare');
+            squareElement.setAttribute('id', squareValue);
+            board.appendChild(squareElement);
+            emptySquares.push(squareValue);
+        })
+    })
+}
+
+const setJuego = () => {
+    snake = ['00', '01', '02', '03'];
+    score = snake.length;
+    direction = 'ArrowRight';
+    boardSquares = Array.from(Array(boardSize), () => new Array(boardSize).fill(squareTypes.emptySquare));
+    console.log(boardSquares);
+    board.innerHTML = '';
+    emptySquares = [];
+    CrearTablero();
+}
+
+const IniciarJuego = () => {
+    setJuego();
+    gameOverSign.style.display = 'none';
+    startButton.disabled = true;
+    DibujarSerpiente();
+    ActualizarPuntos();
+    ComidaAzar();
+    document.addEventListener('keydown', Movimientos);
+    moveInterval = setInterval( () =>  MoverSerpiente(), gameSpeed);
+}
+
+startButton.addEventListener('click', IniciarJuego);
